@@ -112,13 +112,16 @@ impl Handler for Mount {
             req.extensions.remove::<OriginalUrl, Url>();
         }
 
-        // Pass back if no error occuring invoking the err, or pass to the
-        // local error handler.
+        // If the handler call failed, delegate to the error handler and 
+        // propogate the result upwards depending on the result of catch()
         return match res {
             Ok(resp) => Ok(resp),
             Err(err) => {
-                let (resp, _) = matched.handler.catch(req, err);
-                Ok(resp)
+                let (resp, result) = matched.handler.catch(req, err);
+                match result {
+                  Ok(()) => Ok(resp),
+                  Err(inner_err) => Err(inner_err)
+                }
             }
         }
     }
